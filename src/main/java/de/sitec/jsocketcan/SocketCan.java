@@ -10,10 +10,12 @@
 package de.sitec.jsocketcan;
 
 import com.sun.jna.Native;
+import com.sun.jna.ptr.IntByReference;
 import de.sitec.ci4j.Can;
 import de.sitec.ci4j.CanFilter;
 import de.sitec.ci4j.CanFrame;
 import de.sitec.ci4j.CanFrame.Type;
+import de.sitec.ci4j.CanTimeoutException;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -33,8 +35,16 @@ public class SocketCan implements Can
     private final static int AF_CAN = 29;
 //    private final static int SIOCGIFINDEX = 0x8933;  /* for ioctl request */
     private final static int SOL_CAN_RAW = 101;
+    private static final int EAGAIN = 11;
+    
+    
+    // TODO: check for ARMHF, ARMEL, AMD64, X86
+    private static final byte SOL_SOCKET = 1;
+    private static final byte SO_RCVTIMEO = 20;
+    
+    
+    
     private final static int CAN_RAW_FILTER = 1;
-//    private final static int EF_MASK = 0x1fffffff;
     private static final int CAN_EFF_FLAG = 0x80000000;
     private static final int CAN_RTR_FLAG = 0x40000000;
 
@@ -45,6 +55,10 @@ public class SocketCan implements Can
 //    private static native int ioctl(int d, int request, InterfaceRequestStruct ifr);
     private static native int setsockopt(int sockfd, int level, int option_name,
             CanFilterStruct filter, int len);
+    private static native int setsockopt(int sockfd, int level, int option_name,
+            TimeValue timeval, int len);
+    private static native int getsockopt(int sockfd, int level, int option_name,
+            TimeValue timeval, IntByReference len);
     private static native int close(int fd);
 
     static
@@ -144,134 +158,6 @@ public class SocketCan implements Can
         
     }
 
-    /**
-     * Set the device state down
-     */
-//    private void setDeviceDown()
-//    {
-//        Runtime rt = Runtime.getRuntime();
-//        Process process;
-//        try
-//        {
-//            /* Powerdown the device */
-//            process = rt.exec("ip link set " + dev + " down");
-//            process.waitFor();
-//
-//        }
-//        catch (IOException | InterruptedException ex)
-//        {
-//            Logger.getLogger(CanJna.class.getName()).log(Level.SEVERE,
-//                    "Can't set the device down", ex);
-//        }
-//    }
-
-    /**
-     * Set the device state down
-     */
-//    private void setDeviceUp()
-//    {
-//        Runtime rt = Runtime.getRuntime();
-//        Process process;
-//        try
-//        {
-//            /* Powerdown the device */
-//            process = rt.exec("ip link set " + dev + " up");
-//            process.waitFor();
-//
-//        }
-//        catch (IOException | InterruptedException ex)
-//        {
-//            Logger.getLogger(CanJna.class.getName()).log(Level.SEVERE,
-//                    "Can't set the device up", ex);
-//        }
-//    }
-
-//    /**
-//     * Set a new bitrate on the device
-//     *
-//     * @param bitrate New bitrate for the device
-//     */
-//    @Override
-//    public void setBitrate(int bitrate)
-//    {
-////        Runtime rt = Runtime.getRuntime();
-////        Process process;
-////
-////        /* Set the device down */
-////        setDeviceDown();
-////        try
-////        {
-////            /*Change the bitrate */
-////            process = rt.exec("ip link set " + dev + " type can bitrate " + bitrate);
-////            process.waitFor();
-////            setDeviceUp();
-////        }
-////        catch (IOException | InterruptedException ex)
-////        {
-////            Logger.getLogger(CanJna.class.getName()).log(Level.SEVERE,
-////                    "Can't set the device bitrate", ex);
-////        }
-//        throw new UnsupportedOperationException();
-//    }
-
-//    /**
-//     * Get the bitrate of an CAN-Device
-//     *
-//     * @return Bitrate
-//     */
-//    @Override
-//    public int getBitrate()
-//    {
-////        int bitrate = 0;
-////        Runtime rt = Runtime.getRuntime();
-////        Process process;
-////
-////        int readedChar;
-////        String[] lines;
-////        String[] words;
-////
-////        try
-////        {
-////            process = rt.exec("ip -details link show " + dev);
-////            InputStream is = process.getInputStream();
-////            process.waitFor();
-////
-////            StringBuilder sb = new StringBuilder();
-////            for (int i = 0; i < 300; i++)
-////            {
-////                readedChar = is.read();
-////                sb.append((char) readedChar);
-////            }
-////
-////            /*
-////             * Output has multiple lines. First we have to split the text in 
-////             * his lines
-////             */
-////            lines = sb.toString().split("\n");
-////
-////            /*
-////             * The intresting Line is the line 3. Now we split the line in the
-////             * words
-////             */
-////            words = lines[3].split(" ");
-////
-////            /* The 6th word is the bitrate */
-////            bitrate = Integer.parseInt(words[5]);
-////
-////        }
-////        catch (IOException | InterruptedException ex)
-////        {
-////            Logger.getLogger(CanJna.class.getName()).log(Level.SEVERE,
-////                    "Can't read the bitrate", ex);
-////        }
-////        finally
-////        {
-////            return bitrate;
-////        }
-//        
-//        throw new UnsupportedOperationException();
-//    }
-
     /** {@inheritDoc } */
     @Override
     public void send(final CanFrame canFrame) throws IOException
@@ -291,11 +177,17 @@ public class SocketCan implements Can
         final CanFrameStruct frame = new CanFrameStruct();
         
         final int bytes = read(socket, frame, frame.size());
-
         if (bytes < 0)
         {
-            throw new IOException("Can't recieve CAN frame from CAN interface: " 
+            if(Native.getLastError() == EAGAIN)
+            {
+                throw new CanTimeoutException();
+            }
+            else
+            {
+                throw new IOException("Can't recieve CAN frame from CAN interface: " 
                     + canInterface);
+            }
         }
         
         return frameMapper(frame);
@@ -415,5 +307,31 @@ public class SocketCan implements Can
                 socket = 0;
             }
         }
+    }
+
+    /** {@inheritDoc } */
+    @Override
+    public void setTimeout(final int timeout) throws IOException
+    {
+        final TimeValue timeValue = new TimeValue(timeout);
+        if(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, timeValue, timeValue.size()) != 0)
+        {
+            throw new IOException("Setting the timeout on: " + canInterface 
+                    + " has failed");
+        }
+    }
+
+    /** {@inheritDoc } */
+    @Override
+    public int getTimeout() throws IOException
+    {
+        final TimeValue timeValue = new TimeValue();
+        final IntByReference timevalSize = new IntByReference(timeValue.size());
+        if(getsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, timeValue, timevalSize) != 0)
+        {
+            throw new IOException("Reading CAN timeout value has failed");
+        }
+        
+        return (int)timeValue.getMillis();
     }
 }
