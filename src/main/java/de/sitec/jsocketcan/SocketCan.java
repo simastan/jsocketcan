@@ -10,6 +10,7 @@
 package de.sitec.jsocketcan;
 
 import com.sun.jna.Native;
+import com.sun.jna.Structure;
 import com.sun.jna.ptr.IntByReference;
 import de.sitec.ci4j.Can;
 import de.sitec.ci4j.CanFilter;
@@ -17,7 +18,9 @@ import de.sitec.ci4j.CanFrame;
 import de.sitec.ci4j.CanFrame.Type;
 import de.sitec.ci4j.CanTimeoutException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * An implementation of <code>Can</code> interface for SocketCAN.
@@ -26,6 +29,7 @@ import java.util.Arrays;
  */
 public class SocketCan implements Can
 {
+    private final List<CanFilterStruct> filters = new ArrayList<>();
     private final String canInterface;
     private int socket;
     
@@ -53,8 +57,8 @@ public class SocketCan implements Can
     private static native int write(int sockfd, CanFrameStruct frame, int len);
     private static native int read(int sockfd, CanFrameStruct frame, int len);
 //    private static native int ioctl(int d, int request, InterfaceRequestStruct ifr);
-    private static native int setsockopt(int sockfd, int level, int option_name,
-            CanFilterStruct filter, int len);
+//    private static native int setsockopt(int sockfd, int level, int option_name,
+//            CanFilterStruct[] filters, int len);
     private static native int setsockopt(int sockfd, int level, int option_name,
             TimeValue timeval, int len);
     private static native int getsockopt(int sockfd, int level, int option_name,
@@ -124,13 +128,6 @@ public class SocketCan implements Can
                     + canInterface);
         }
 
-        /* Close_the_input_no_read */
-//        if(setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, null, 0) != 0)
-//        {
-//            throw new IOException("Setting the CAN options on: " + canInterface 
-//                    + " has failed");
-//        }
-
         /* Set the Device */
         address.can_family = AF_CAN;
         interfaceRequest.ifr_ifrn.ifrn_name = canInterface;
@@ -195,36 +192,57 @@ public class SocketCan implements Can
 
     /** {@inheritDoc } */
     @Override
-    public void setFilter(final CanFilter filter) throws IOException
+    public void addFilter(final CanFilter filter) throws IOException
     {
-        final int id;
-        final int mask;
-        
-        if(filter.getType() == Type.EXTENDED)
-        {
-            id = filter.getId() | CAN_EFF_FLAG;
-            mask = filter.getMask() | CAN_EFF_FLAG;
-        }
-        else if(filter.getType() == Type.REMOTE_TRANSMISSION_REQUEST)
-        {
-            id = filter.getId() | CAN_RTR_FLAG;
-            mask = filter.getMask() | CAN_RTR_FLAG;
-        }
-        else
-        {
-            id = filter.getId();
-            mask = filter.getMask();
-        }
-        
-        final CanFilterStruct filterNative = new CanFilterStruct();
-        filterNative.can_id = id;
-        filterNative.can_mask = mask;
-        
-        if (setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, filterNative,
-                    filterNative.size()) != 0)
-        {
-            throw new IOException("Can't set the filter for: " + canInterface);
-        }
+        // TODO: implement
+        throw new UnsupportedOperationException("Not supported yet.");
+//        final int id;
+//        final int mask;
+//        
+//        if(filter.getType() == Type.EXTENDED)
+//        {
+//            id = filter.getId() | CAN_EFF_FLAG;
+//            mask = filter.getMask() | CAN_EFF_FLAG;
+//        }
+//        else if(filter.getType() == Type.REMOTE_TRANSMISSION_REQUEST)
+//        {
+//            id = filter.getId() | CAN_RTR_FLAG;
+//            mask = filter.getMask() | CAN_RTR_FLAG;
+//        }
+//        else
+//        {
+//            id = filter.getId();
+//            mask = filter.getMask();
+//        }
+//        
+//        final CanFilterStruct filterNative = new CanFilterStruct();
+//        filterNative.can_id = id;
+//        filterNative.can_mask = mask;
+//        
+//        filters.add(filterNative);
+//        
+//
+//        final CanFilterStruct[] filtersParameter = filters.toArray(new CanFilterStruct[filters.size()]);
+//        final int nativeSize = Native.getNativeSize(CanFilterStruct.class, filtersParameter);
+//        
+//        if (setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, filtersParameter,
+//                    nativeSize) != 0)
+//        {
+//            throw new IOException("Can't add filter " + filter + " for: " + canInterface);
+//        }
+    }
+
+    @Override
+    public void removeFilters() throws IOException
+    {
+        // TODO: implement
+        throw new UnsupportedOperationException("Not supported yet.");
+//        filters.clear();
+//        if(setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, (CanFilterStruct[])null, 0) != 0)
+//        {
+//            throw new IOException("Removing of CAN filters on: " + canInterface 
+//                    + " has failed");
+//        }
     }
 
     /**
