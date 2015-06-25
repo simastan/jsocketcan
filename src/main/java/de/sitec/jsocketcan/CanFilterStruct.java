@@ -19,7 +19,7 @@ import java.util.List;
  * @author sitec systems GmbH
  * @since 1.0
  */
-public class CanFilterStruct extends Structure implements Structure.ByReference
+public class CanFilterStruct extends Structure
 {
     public int can_id;
     public int can_mask;
@@ -34,4 +34,19 @@ public class CanFilterStruct extends Structure implements Structure.ByReference
     {
         return Arrays.asList("can_id", "can_mask");
     }
+    
+    public CanFilterStruct(final int can_id, final int can_mask) 
+    {
+        super();
+        this.can_id = can_id;
+        this.can_mask = can_mask;
+    }
+    
+    public static class ByReference extends CanFilterStruct implements Structure.ByReference
+    {
+    };
+
+    public static class ByValue extends CanFilterStruct implements Structure.ByValue
+    {
+    };
 }
