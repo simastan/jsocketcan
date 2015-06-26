@@ -38,7 +38,7 @@ public class SocketCan implements Can
     private final static int CAN_RAW = 1;    /* Choose CAN Protocol */
     private final static int PF_CAN = 29;    /* Chose Socket Protocol */
     private final static int AF_CAN = 29;
-//    private final static int SIOCGIFINDEX = 0x8933;  /* for ioctl request */
+    private final static int SIOCGIFINDEX = 0x8933;  /* for ioctl request */
     private final static int SOL_CAN_RAW = 101;
     private static final int EAGAIN = 11;
     
@@ -58,7 +58,7 @@ public class SocketCan implements Can
     private static native int bind(int sockfd, SocketAddressCanStruct addr, int len);
     private static native int write(int sockfd, CanFrameStruct frame, int len);
     private static native int read(int sockfd, CanFrameStruct frame, int len);
-//    private static native int ioctl(int d, int request, InterfaceRequestStruct ifr);
+    private static native int ioctl(int d, int request, InterfaceRequestStruct ifr);
     private static native int setsockopt(int sockfd, int level, int option_name,
             Pointer filters, int len);
     private static native int setsockopt(int sockfd, int level, int option_name,
@@ -119,39 +119,28 @@ public class SocketCan implements Can
      */
     private void init() throws IOException
     {
-        final InterfaceRequestStruct interfaceRequest = new InterfaceRequestStruct();
-        interfaceRequest.ifr_ifrn.setType(String.class);
-        interfaceRequest.ifr_ifru.setType(int.class);
-        
-        final SocketAddressCanStruct address = new SocketAddressCanStruct();
-
         /* Open the socket */
         if ((socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) <= 0)
         {
             throw new IOException("Can't create Socket for CAN interface: " 
                     + canInterface);
         }
-
-        /* Set the Device */
-        address.can_family = AF_CAN;
-        interfaceRequest.ifr_ifrn.ifrn_name = canInterface;
-
-        /* 
-         * TODO: FIXME -- ioctl call doesn't work set the index of the interface by 
-         * hand
-         */
-//        int ret = ioctl(socket, SIOCGIFINDEX, interfaceRequest);
-//        if (ret != 0)
-//        {
-//            perror("Unable to read interface index");
-//            throw new IOException("Unable to read interface index");
-//        }
         
-        address.can_ifindex = 3;
+        final InterfaceRequestStruct interfaceRequest = new InterfaceRequestStruct();
+        interfaceRequest.ifr_ifrn = new InterfaceRequestStruct.IfrIfrnUnion(canInterface);
         
-        System.out.println("Socket pre bind: " + socket);
+        if(ioctl(socket, SIOCGIFINDEX, interfaceRequest) != 0)
+        {
+            throw new IOException("Set the CAN interface: " + canInterface 
+                    + " has failed");
+        }
+        
+        final SocketAddressCanStruct addressStruct = new SocketAddressCanStruct();
+        addressStruct.can_family = AF_CAN;
+        addressStruct.can_ifindex = interfaceRequest.ifr_ifru.ifru_ivalue;
+        
         // bind socket to interface
-        if (bind(socket, address, address.size()) != 0)
+        if (bind(socket, addressStruct, addressStruct.size()) != 0)
         {
             throw new IOException("Can't bind Socket to CAN interface: " 
                     + canInterface);

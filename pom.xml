@@ -96,6 +96,11 @@
             <artifactId>jna</artifactId>
             <version>4.1.0</version>
         </dependency>
+        <dependency>
+           <groupId>org.slf4j</groupId>
+           <artifactId>slf4j-api</artifactId>
+           <version>1.7.12</version>
+        </dependency>
     </dependencies>
     
     <profiles>
@@ -150,4 +155,5 @@
           </snapshots>
       </repository>
   </repositories>
+    <description>Framework for Access to Linux SocketCAN over JNA. Implements CI4J.</description>
 </project>
