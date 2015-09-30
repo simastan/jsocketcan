@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.sitec</groupId>
     <artifactId>jSocketCan</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,8 +17,8 @@
     </organization>
     
     <scm>
-        <connection>scm:svn:http://172.16.40.5/svn/15_0014/tags/REL-1.0.0</connection>
-        <developerConnection>scm:svn:http://172.16.40.5/svn/15_0014/tags/REL-1.0.0</developerConnection>
+        <connection>scm:svn:http://172.16.40.5/svn/15_0014/trunk</connection>
+        <developerConnection>scm:svn:http://172.16.40.5/svn/15_0014/trunk</developerConnection>
     </scm>
     
     <build>
