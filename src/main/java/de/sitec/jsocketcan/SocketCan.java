@@ -9,19 +9,23 @@
  */
 package de.sitec.jsocketcan;
 
+import de.sitec.jsocketcan.jna.InterfaceRequestStruct;
+import de.sitec.jsocketcan.jna.CanFrameStruct;
+import de.sitec.jsocketcan.jna.CanFilterStruct;
+import de.sitec.jsocketcan.jna.TimeValue;
+import de.sitec.jsocketcan.jna.SocketAddressCanStruct;
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import com.sun.jna.ptr.IntByReference;
-import de.sitec.ci4j.Can;
-import de.sitec.ci4j.CanFilter;
-import de.sitec.ci4j.CanFrame;
-import de.sitec.ci4j.CanFrame.Type;
-import de.sitec.ci4j.CanTimeoutException;
+import de.sitec.jcaninterface.Can;
+import de.sitec.jcaninterface.CanFilter;
+import de.sitec.jcaninterface.CanFrame;
+import de.sitec.jcaninterface.CanFrame.Type;
+import de.sitec.jcaninterface.CanTimeoutException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-//import net.jazdw.jnacan.c.can_filter;
 
 /**
  * An implementation of <code>Can</code> interface for SocketCAN.
@@ -75,23 +79,22 @@ public class SocketCan implements Can
     }
 
     /**
-     * Constructur-
+     * Constructor.
      * @param canInterface The CAN interface
      * @since 1.0
      */
     private SocketCan(final String canInterface)
     {
-        // TODO: Input check
-//        if(canInterface < 0)
-//        {
-//            throw new IllegalArgumentException("CAN interface cant be '0'");
-//        }
+        if(canInterface == null || !canInterface.contains("can"))
+        {
+            throw new IllegalArgumentException("CAN interface parameter must contain keyword 'can'");
+        }
         this.canInterface = canInterface;
     }
     
     /**
      * Creates an instance of the <code>SocketCAN</code> class.
-     * @param canInterface The CAN interface
+     * @param canInterface The CAN interface (example: 'vcan0', 'can0', 'can1', ...)
      * @return An instance of <code>SocketCAN</code> 
      * @throws IOException Creation of socket or the binding has failed
      * @since 1.0

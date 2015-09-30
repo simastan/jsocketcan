@@ -8,7 +8,7 @@
  *    date: $Date:   $
  * Copyright (c): sitec systems GmbH, 2015
  */
-package de.sitec.jsocketcan;
+package de.sitec.jsocketcan.jna;
 
 import com.sun.jna.Structure;
 import com.sun.jna.Union;

@@ -88,8 +88,8 @@
     <dependencies>
         <dependency>
             <groupId>de.sitec</groupId>
-            <artifactId>CI4J</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <artifactId>jCanInterface</artifactId>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>net.java.dev.jna</groupId>
@@ -151,9 +151,9 @@
               <updatePolicy>daily</updatePolicy>
           </releases>
           <snapshots>
-              <enabled>true</enabled>
+              <enabled>false</enabled>
           </snapshots>
       </repository>
   </repositories>
-    <description>Framework for Access to Linux SocketCAN over JNA. Implements CI4J.</description>
+    <description>Framework for Access to Linux SocketCAN over JNA. Implements jCanInterface.</description>
 </project>
