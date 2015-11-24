@@ -1,10 +1,6 @@
 /*
- * Project: 15_0013_CF4J
- * $Header: $
- * Author:  Mattes Standfuss
- * Last Change:
- *    by:   $Author: $
- *    date: $Date:   $
+ * Project: 15_0014_jSocketCan
+ * Author: Mattes Standfuss
  * Copyright (c): sitec systems GmbH, 2015
  */
 package de.sitec.jsocketcan;
@@ -28,7 +24,10 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * An implementation of <code>Can</code> interface for SocketCAN.
+ * An implementation of <code>Can</code> interface for SocketCAN. For creating 
+ * an instance use {@link #createSocketCan(java.lang.String, int) } if you wan't
+ * control the CAN bus interface or use {@link #createSocketCan(java.lang.String) }
+ * if the CAN bus interface should controlled by external.
  * @author sitec systems GmbH
  * @since 1.0
  */
@@ -51,7 +50,7 @@ public class SocketCan implements Can
     private static final byte SOL_SOCKET = 1;
     private static final byte SO_RCVTIMEO = 20;
     
-    
+    private static final byte SUCCESS = 0;
     
     private final static int CAN_RAW_FILTER = 1;
     private static final int CAN_EFF_FLAG = 0x80000000;
@@ -72,6 +71,7 @@ public class SocketCan implements Can
     private static native int getsockopt(int sockfd, int level, int option_name,
             TimeValue timeval, IntByReference len);
     private static native int close(int fd);
+    
 
     static
     {
@@ -93,7 +93,37 @@ public class SocketCan implements Can
     }
     
     /**
-     * Creates an instance of the <code>SocketCAN</code> class.
+     * Creates an instance of the <code>SocketCAN</code> class. Its sets the 
+     * bitrate and starts the CAN bus interface.
+     * @param canInterface The CAN interface (example: 'vcan0', 'can0', 'can1', ...)
+     * @param bitrate Bitrate of the CAN bus, can be a value between 1000(1kbit/s) 
+     *        and 1000000(1000kbit/s)
+     * @return An instance of <code>SocketCAN</code> 
+     * @throws IOException Creation of socket or the binding has failed
+     * @since 1.1
+     */
+    public static final Can createSocketCan(final String canInterface
+            , final int bitrate) throws IOException
+    {
+        final SocketCan socketCan = new SocketCan(canInterface);
+        try
+        {
+            socketCan.initCanInterface(bitrate);
+            socketCan.init();
+            
+            return socketCan;
+        }
+        catch (final IOException ex)
+        {
+            socketCan.close();
+            throw ex;
+        }
+    }
+    
+    /**
+     * Creates an instance of the <code>SocketCAN</code> class. Don't starts the
+     * CAN bus interface. This must be controlled by external or use 
+     * {@link #createSocketCan(java.lang.String, int) }.
      * @param canInterface The CAN interface (example: 'vcan0', 'can0', 'can1', ...)
      * @return An instance of <code>SocketCAN</code> 
      * @throws IOException Creation of socket or the binding has failed
@@ -114,6 +144,29 @@ public class SocketCan implements Can
             throw ex;
         }
     }
+    
+    /**
+     * Starts the CAN interface and sets the bitrate.
+     * @param bitrate Bitrate of the CAN bus, can be a value between 1000(1kbit/s) 
+     *        and 1000000(1000kbit/s)
+     * @throws IOException Starting the CAN bus interface or setting of bitrate 
+     *         has failed
+     * @since 1.1
+     */
+    private void initCanInterface(final int bitrate) throws IOException
+    {
+        if(InterfaceControl.INSTANCE.can_set_bitrate(canInterface, bitrate) != SUCCESS)
+        {
+            throw new IOException("Set baudrate has failed for CAN interface: " 
+                    + canInterface);
+        }
+
+        if(InterfaceControl.INSTANCE.can_do_start(canInterface) != SUCCESS)
+        {
+            throw new IOException("Start of CAN interface: " + canInterface 
+                    + " has failed");
+        }
+    }
 
     /**
      * Initialize the connection to CAN socket.
@@ -123,7 +176,7 @@ public class SocketCan implements Can
     private void init() throws IOException
     {
         /* Open the socket */
-        if ((socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) <= 0)
+        if ((socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) <= SUCCESS)
         {
             throw new IOException("Can't create Socket for CAN interface: " 
                     + canInterface);
@@ -348,6 +401,8 @@ public class SocketCan implements Can
                 socket = 0;
             }
         }
+        
+        InterfaceControl.INSTANCE.can_do_stop(canInterface);
     }
 
     /** {@inheritDoc } */
