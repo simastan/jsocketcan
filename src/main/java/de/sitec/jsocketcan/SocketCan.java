@@ -155,6 +155,12 @@ public class SocketCan implements Can
      */
     private void initCanInterface(final int bitrate) throws IOException
     {
+        if(InterfaceControl.INSTANCE.can_do_stop(canInterface) != SUCCESS)
+        {
+            throw new IOException("Stop of CAN interface: " + canInterface 
+                    + " has failed");
+        }
+        
         if(InterfaceControl.INSTANCE.can_set_bitrate(canInterface, bitrate) != SUCCESS)
         {
             throw new IOException("Set baudrate has failed for CAN interface: " 
@@ -402,7 +408,11 @@ public class SocketCan implements Can
             }
         }
         
-        InterfaceControl.INSTANCE.can_do_stop(canInterface);
+        if(InterfaceControl.INSTANCE.can_do_stop(canInterface) != SUCCESS)
+        {
+            throw new IOException("Stoping for CAN interface: " + canInterface 
+                    + " has failed");
+        }
     }
 
     /** {@inheritDoc } */
