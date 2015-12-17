@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.sitec</groupId>
     <artifactId>jSocketCan</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,7 +26,7 @@
     <scm>
         <connection>scm:git:https://${server.ip}/redmine/projekte/15_0014/scm_15_0014.git</connection>
         <developerConnection>scm:git:https://${server.ip}/redmine/projekte/15_0014/scm_15_0014.git</developerConnection>
-        <tag>REL-1.1.1</tag>
+        <tag>HEAD</tag>
     </scm>
     
     <build>
