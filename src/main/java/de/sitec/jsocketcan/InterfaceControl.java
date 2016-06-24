@@ -25,17 +25,14 @@
  */
 package de.sitec.jsocketcan;
 
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-
 /**
  * An native interface for controlling the CAN interface.
  * @author sitec systems GmbH
  * @since 1.1
  */
-/* package */ interface InterfaceControl extends Library
+/* package */ interface InterfaceControl
 {
-    /* package */ final InterfaceControl INSTANCE = (InterfaceControl) Native.loadLibrary("socketcan", InterfaceControl.class);
+//    /* package */ final InterfaceControl INSTANCE = (InterfaceControl) Native.loadLibrary("socketcan", InterfaceControl.class);
     
     /**
      * Starts the CAN interface. This starts the CAN interface with the given 

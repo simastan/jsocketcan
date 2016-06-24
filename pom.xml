@@ -3,12 +3,14 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>de.sitec</groupId>
     <artifactId>jSocketCan</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.2.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.7</maven.compiler.source>
         <maven.compiler.target>1.7</maven.compiler.target>
+        <target.amd64>target/native/amd64</target.amd64>
+        <target.armhf>target/native/armhf</target.armhf>
     </properties>
     
     <organization>
@@ -31,6 +33,53 @@
     
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                    <!-- this execution happens just after compiling the java
+                    classes, and builds the native code.
+
+                        We use an antrun for this, rather than an exec, as it
+                        finds make on the system path. It also allows us to write
+                        the classpath file.
+                        -->
+                        <id>build-native</id>
+                        <phase>process-classes</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <property name="native.classpath" refid="maven.compile.classpath" />
+                                <mkdir dir="${target.amd64}" />
+                                <exec dir="${target.amd64}" executable="cmake" failonerror="true">
+                                    <arg line="../../../src/main/native" />
+                                    <arg line="-DCMAKE_C_COMPILER=gcc" />
+                                    <arg line="-DARCH=amd64" />
+                                    <arg line="-DCLASSPATH=${native.classpath}" />
+                                </exec>
+                                <exec dir="${target.amd64}" executable="make" failonerror="true" />
+                                <exec dir="${target.amd64}" executable="make" failonerror="true">
+                                    <arg line="install" />
+                                </exec>
+                                <mkdir dir="${target.armhf}" />
+                                <exec dir="${target.armhf}" executable="cmake" failonerror="true">
+                                    <arg line="../../../src/main/native" />
+                                    <arg line="-DCMAKE_C_COMPILER=arm-linux-gnueabihf-gcc" />
+                                    <arg line="-DARCH=armhf" />
+                                    <arg line="-DCLASSPATH=${native.classpath}" />
+                                </exec>
+                                <exec dir="${target.armhf}" executable="make" failonerror="true" />
+                                <exec dir="${target.armhf}" executable="make" failonerror="true">
+                                    <arg line="install" />
+                                </exec>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
@@ -125,14 +174,14 @@
             <version>1.0.0</version>
         </dependency>
         <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>4.2.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
             <version>1.7.12</version>
+        </dependency>
+        <dependency>
+            <groupId>de.sitec</groupId>
+            <artifactId>NativeLibraryLoader</artifactId>
+            <version>1.1.0</version>
         </dependency>
     </dependencies>
     

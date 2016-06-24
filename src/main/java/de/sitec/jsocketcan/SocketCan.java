@@ -21,26 +21,18 @@
  */
 /*
  * Author: Mattes Standfuss
- * Copyright (c): sitec systems GmbH, 2015
+ * Copyright (c): sitec systems GmbH, 2016
  */
 package de.sitec.jsocketcan;
 
-import de.sitec.jsocketcan.jna.InterfaceRequestStruct;
-import de.sitec.jsocketcan.jna.CanFrameStruct;
-import de.sitec.jsocketcan.jna.CanFilterStruct;
-import de.sitec.jsocketcan.jna.TimeValue;
-import de.sitec.jsocketcan.jna.SocketAddressCanStruct;
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.ptr.IntByReference;
 import de.sitec.jcaninterface.Can;
 import de.sitec.jcaninterface.CanFilter;
 import de.sitec.jcaninterface.CanFrame;
 import de.sitec.jcaninterface.CanFrame.Type;
 import de.sitec.jcaninterface.CanTimeoutException;
+import de.sitec.nativelibraryloader.NativeLibraryLoader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -53,63 +45,32 @@ import java.util.List;
  */
 public class SocketCan implements Can
 {
-    private final List<CanFilterStruct> currentFilters = new ArrayList<>();
+    private final List<CanFilterNative> currentFilters = new ArrayList<>();
     private final String canInterface;
-    private int socket;
+    private final boolean interfaceControl;
     
-    private final static int SOCK_RAW = 3;   /* Choose Socket Type */
-    private final static int CAN_RAW = 1;    /* Choose CAN Protocol */
-    private final static int PF_CAN = 29;    /* Chose Socket Protocol */
-    private final static int AF_CAN = 29;
-    private final static int SIOCGIFINDEX = 0x8933;  /* for ioctl request */
-    private final static int SOL_CAN_RAW = 101;
-    private static final int EAGAIN = 11;
-    
-    
-    // TODO: check for ARMHF, ARMEL, AMD64, X86
-    private static final byte SOL_SOCKET = 1;
-    private static final byte SO_RCVTIMEO = 20;
-    
-    private static final byte SUCCESS = 0;
-    
-    private final static int CAN_RAW_FILTER = 1;
+    private static final CanFilterNative DISABLE_FILTER = new CanFilterNative(0, 0);
     private static final int CAN_EFF_FLAG = 0x80000000;
     private static final int CAN_RTR_FLAG = 0x40000000;
-    private static final CanFilterStruct DISABLE_FILTER = new CanFilterStruct(0, 0);
-
-    private static native int socket(int socket_family, int socket_type, int protocol);
-    private static native int bind(int sockfd, SocketAddressCanStruct addr, int len);
-    private static native int write(int sockfd, CanFrameStruct frame, int len);
-    private static native int read(int sockfd, CanFrameStruct frame, int len);
-    private static native int ioctl(int d, int request, InterfaceRequestStruct ifr);
-    private static native int setsockopt(int sockfd, int level, int option_name,
-            Pointer filters, int len);
-    private static native int setsockopt(int sockfd, int level, int option_name,
-            CanFilterStruct filter, int len);
-    private static native int setsockopt(int sockfd, int level, int option_name,
-            TimeValue timeval, int len);
-    private static native int getsockopt(int sockfd, int level, int option_name,
-            TimeValue timeval, IntByReference len);
-    private static native int close(int fd);
     
-
     static
     {
-        Native.register("c");
+        NativeLibraryLoader.loadLibrary("de.sitec.jsocketcan", "libsocketcan_jni");
     }
-
+    
     /**
      * Constructor.
      * @param canInterface The CAN interface
      * @since 1.0
      */
-    private SocketCan(final String canInterface)
+    private SocketCan(final String canInterface, final boolean interfaceControl)
     {
         if(canInterface == null || !canInterface.contains("can"))
         {
             throw new IllegalArgumentException("CAN interface parameter must contain keyword 'can'");
         }
         this.canInterface = canInterface;
+        this.interfaceControl = interfaceControl;
     }
     
     /**
@@ -125,11 +86,11 @@ public class SocketCan implements Can
     public static final Can createSocketCan(final String canInterface
             , final int bitrate) throws IOException
     {
-        final SocketCan socketCan = new SocketCan(canInterface);
+        final SocketCan socketCan = new SocketCan(canInterface, true);
         try
         {
-            socketCan.initCanInterface(bitrate);
-            socketCan.init();
+            socketCan.initCanInterface(canInterface, bitrate);
+            socketCan.init(canInterface);
             
             return socketCan;
         }
@@ -151,10 +112,10 @@ public class SocketCan implements Can
      */
     public static final Can createSocketCan(final String canInterface) throws IOException
     {
-        final SocketCan socketCan = new SocketCan(canInterface);
+        final SocketCan socketCan = new SocketCan(canInterface, false);
         try
         {
-            socketCan.init();
+            socketCan.init(canInterface);
             
             return socketCan;
         }
@@ -173,130 +134,29 @@ public class SocketCan implements Can
      *         has failed
      * @since 1.1
      */
-    private void initCanInterface(final int bitrate) throws IOException
-    {
-        if(InterfaceControl.INSTANCE.can_do_stop(canInterface) != SUCCESS)
-        {
-            throw new IOException("Stop of CAN interface: " + canInterface 
-                    + " has failed");
-        }
-        
-        if(InterfaceControl.INSTANCE.can_set_bitrate(canInterface, bitrate) != SUCCESS)
-        {
-            throw new IOException("Set baudrate has failed for CAN interface: " 
-                    + canInterface);
-        }
-
-        if(InterfaceControl.INSTANCE.can_do_start(canInterface) != SUCCESS)
-        {
-            throw new IOException("Start of CAN interface: " + canInterface 
-                    + " has failed");
-        }
-    }
+    private native void initCanInterface(final String canInterface
+            , final int bitrate) throws IOException;
 
     /**
      * Initialize the connection to CAN socket.
      * @throws IOException Creation of socket or the binding has failed
      * @since 1.0
      */
-    private void init() throws IOException
-    {
-        /* Open the socket */
-        if ((socket = socket(PF_CAN, SOCK_RAW, CAN_RAW)) <= SUCCESS)
-        {
-            throw new IOException("Can't create Socket for CAN interface: " 
-                    + canInterface);
-        }
-        
-        final InterfaceRequestStruct interfaceRequest = new InterfaceRequestStruct();
-        interfaceRequest.ifr_ifrn = new InterfaceRequestStruct.IfrIfrnUnion(canInterface);
-        
-        if(ioctl(socket, SIOCGIFINDEX, interfaceRequest) != 0)
-        {
-            throw new IOException("Set the CAN interface: " + canInterface 
-                    + " has failed");
-        }
-        
-        final SocketAddressCanStruct addressStruct = new SocketAddressCanStruct();
-        addressStruct.can_family = AF_CAN;
-        addressStruct.can_ifindex = interfaceRequest.ifr_ifru.ifru_ivalue;
-        
-        // bind socket to interface
-        if (bind(socket, addressStruct, addressStruct.size()) != 0)
-        {
-            throw new IOException("Can't bind Socket to CAN interface: " 
-                    + canInterface);
-        }
-        
-    }
+    private native void init(final String canInterface) throws IOException;
 
     /** {@inheritDoc } */
     @Override
     public void send(final CanFrame canFrame) throws IOException
     {
-        final CanFrameStruct frameNative = frameMapper(canFrame);
-        
-        if (write(socket, frameNative, frameNative.size()) <= 0)
-        {
-            throw new IOException("Can't send CAN frame");
-        }
+        final CanFrameNative frameNative = mapFrame(canFrame);
+        sendNative(frameNative.id, frameNative.length, frameNative.data);
     }
 
     /** {@inheritDoc } */
     @Override
-    public CanFrame receive() throws IOException
+    public CanFrame receive() throws CanTimeoutException, IOException
     {
-        final CanFrameStruct frame = new CanFrameStruct();
-        
-        final int bytes = read(socket, frame, frame.size());
-        if (bytes < 0)
-        {
-            if(Native.getLastError() == EAGAIN)
-            {
-                throw new CanTimeoutException();
-            }
-            else
-            {
-                throw new IOException("Can't recieve CAN frame from CAN interface: " 
-                    + canInterface);
-            }
-        }
-        
-        return frameMapper(frame);
-    }
-    
-    /**
-     * Adds the filter to the local buffer.
-     * @param filter The filter to add
-     * @since 1.0
-     */
-    private void addFilterToBuffer(final CanFilter filter)
-    {
-        final int id;
-        final int mask;
-
-        if(filter.getType() == Type.EXTENDED)
-        {
-            id = filter.getId() | CAN_EFF_FLAG;
-            mask = filter.getMask() | CAN_EFF_FLAG;
-        }
-        else if(filter.getType() == Type.REMOTE_TRANSMISSION_REQUEST)
-        {
-            id = filter.getId() | CAN_RTR_FLAG;
-            mask = filter.getMask() | CAN_RTR_FLAG;
-        }
-        else
-        {
-            id = filter.getId();
-            mask = filter.getMask();
-        }
-
-
-        final CanFilterStruct filterNative = new CanFilterStruct();
-        filterNative.can_id = id;
-        filterNative.can_mask = mask;
-
-        currentFilters.add(filterNative);
+        return mapFrame(receiveNative());
     }
     
     /**
@@ -304,35 +164,23 @@ public class SocketCan implements Can
      * @throws IOException Setting the filters has failed
      * @since 1.0
      */
-    private void setFilters() throws IOException
-    {
-        final CanFilterStruct[] filtersStruct = currentFilters.toArray(new CanFilterStruct[currentFilters.size()]);
-        final CanFilterStruct.ByReference filterReference = new CanFilterStruct.ByReference();
-        final CanFilterStruct[] filtersParameter = (CanFilterStruct[])filterReference.toArray(currentFilters.size());
-        for(int i=0; i<filtersStruct.length; i++)
-        {
-            filtersParameter[i].can_id = filtersStruct[i].can_id;
-            filtersParameter[i].can_mask = filtersStruct[i].can_mask;
-            filtersParameter[i].write();
-        }
-        
-        if (setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, filterReference.getPointer(),
-                    filtersParameter[0].size() * filtersParameter.length) != 0)
-        {
-            throw new IOException("Can't add filters for: " + canInterface);
-        }
-    }
+    private native void setFilters(final CanFilterNative[] canFilters) throws IOException;
 
     /** {@inheritDoc } */
     @Override
     public void addFilters(final CanFilter... filters) throws IOException
     {
-        for(final CanFilter filter: filters)
+        if(filters == null || filters.length <= 0)
         {
-            addFilterToBuffer(filter);
+            throw new IllegalArgumentException("Parameter filter can't be null or empty");
         }
         
-        setFilters();
+        for(final CanFilter filter: filters)
+        {
+            currentFilters.add(mapFilter(filter));
+        }
+        
+        setFilters(currentFilters.toArray(new CanFilterNative[currentFilters.size()]));
     }
 
     /** {@inheritDoc } */
@@ -340,30 +188,48 @@ public class SocketCan implements Can
     public void removeFilters() throws IOException
     {
         currentFilters.clear();
-        if(setsockopt(socket, SOL_CAN_RAW, CAN_RAW_FILTER, DISABLE_FILTER, DISABLE_FILTER.size()) != 0)
-        {
-            throw new IOException("Removing of CAN filters on: " + canInterface 
-                    + " has failed");
-        }
+        currentFilters.add(DISABLE_FILTER);
+        
+        setFilters(currentFilters.toArray(new CanFilterNative[currentFilters.size()]));
     }
-
+    
     /**
-     * Maps from the JNA CAN Structure to <code>CanFrame</code>.
-     * @param frame JNA CanFrameStructure for the mapping
-     * @return The mapped <code>CanFrame</code> Object
+     * Closes the connection to CAN socket and shutdown the CAN interface if 
+     * factory method {@link #createSocketCan(java.lang.String, int) } was used 
+     * for object creation.
+     * @throws IOException If the closing of socket or the interface shutdown 
+     *         has failed
      * @since 1.0
      */
-    private static CanFrame frameMapper(final CanFrameStruct frame)
+    @Override
+    public void close() throws IOException
     {
-        final int id = frame.can_id;
-        final byte length = frame.can_dlc;
+        closeNative(canInterface, interfaceControl);
+    }
+
+    /** {@inheritDoc } */
+    @Override
+    public native void setTimeout(final int timeout) throws IOException;
+
+    /** {@inheritDoc } */
+    @Override
+    public native int getTimeout() throws IOException;
+
+    /**
+     * Maps from the <code>CanFrameNative</code> to <code>CanFrame</code>.
+     * @param frame <code>CanFrameNative</code> for the mapping
+     * @return The mapped <code>CanFrame</code> Object
+     * @since 1.2
+     */
+    private static CanFrame mapFrame(final CanFrameNative frame)
+    {
         final Type type;
         
-        if((id & CAN_EFF_FLAG) == CAN_EFF_FLAG)
+        if((frame.id & CAN_EFF_FLAG) == CAN_EFF_FLAG)
         {
             type = CanFrame.Type.EXTENDED;
         }
-        else if((id & CAN_RTR_FLAG) == CAN_RTR_FLAG)
+        else if((frame.id & CAN_RTR_FLAG) == CAN_RTR_FLAG)
         {
             type = CanFrame.Type.REMOTE_TRANSMISSION_REQUEST;
         }
@@ -372,92 +238,144 @@ public class SocketCan implements Can
             type = CanFrame.Type.STANDARD;
         }
         
-        final byte[] data = Arrays.copyOfRange(frame.data, 3, length + 3);
+        // From JNA implementation, why?
+//        final byte[] data = Arrays.copyOfRange(frame.data, 3, length + 3);
 
-        return new CanFrame(id, type, length, data);
+        return new CanFrame(frame.id, type, frame.length, frame.data);
     }
 
     /**
-     * Maps from the <code>CanFrame</code> object to JNA based CAN frame structure.
+     * Maps from the <code>CanFrame</code> object to <code>CanFrameNative</code>.
      * @param frame The <code>CanFrame</code> object
-     * @return Th mapped JNA based CAN frame structure
-     * @since 1.0
+     * @return The mapped <code>CanFrameNative</code>
+     * @since 1.2
      */
-    private static CanFrameStruct frameMapper(final CanFrame frame)
+    private static CanFrameNative mapFrame(final CanFrame frame)
     {
         final int id;
-        if(frame.getType() == Type.EXTENDED)
+        switch(frame.getType())
         {
-            id = frame.getId() | CAN_EFF_FLAG;
-        }
-        else if(frame.getType() == Type.REMOTE_TRANSMISSION_REQUEST)
-        {
-            id = frame.getId() | CAN_RTR_FLAG;
-        }
-        else
-        {
-            id = frame.getId();
+            case EXTENDED:
+                id = frame.getId() | CAN_EFF_FLAG;
+                break;
+            case REMOTE_TRANSMISSION_REQUEST:
+                id = frame.getId() | CAN_RTR_FLAG;
+                break;
+            default:
+                id = frame.getId();
+                break;
         }
         
-        final CanFrameStruct frameNative = new CanFrameStruct(id, frame.getLength(), frame.getData());
+        final CanFrameNative frameNative = new CanFrameNative(id, frame.getLength()
+                , frame.getData());
 
         return frameNative;
     }
-
+    
     /**
-     * Closes the connection to CAN socket.
-     * @throws IOException If the clsoing of socket has failed
-     * @since 1.0
+     * Maps from the <code>CanFilter</code> object to <code>CanFilterNative</code>.
+     * @param filter The <code>CanFilter</code> object
+     * @return The mapped <code>CanFilterNative</code>
+     * @since 1.2
      */
-    @Override
-    public void close() throws IOException
+    private static CanFilterNative mapFilter(final CanFilter filter)
     {
-        if(socket != 0)
+        final int id;
+        final int mask;
+        
+        switch(filter.getType())
         {
-            try
-            {
-                if (close(socket) < 0)
-                {
-                    throw new IOException("Could not close the socket for CAN interface: " 
-                            + canInterface);
-                }
-            }
-            finally
-            {
-                socket = 0;
-            }
+            case EXTENDED:
+                id = filter.getId() | CAN_EFF_FLAG;
+                mask = filter.getMask() | CAN_EFF_FLAG;
+                break;
+            case REMOTE_TRANSMISSION_REQUEST:
+                id = filter.getId() | CAN_RTR_FLAG;
+                mask = filter.getMask() | CAN_RTR_FLAG;
+                break;
+            default:
+                id = filter.getId();
+                mask = filter.getMask();
+                break;
         }
         
-        if(InterfaceControl.INSTANCE.can_do_stop(canInterface) != SUCCESS)
+        return new CanFilterNative(id, mask);
+    }
+    
+    /**
+     * Sends an CAN frame over the socket.
+     * @param id The ID of the frame in SocketCAN notation
+     * @param length The length of the frame
+     * @param data The data of the frame
+     * @throws IOException If the sending over the socket has failed
+     * @since 1.2
+     */
+    private native void sendNative(final int id, final byte length
+            , final byte[] data) throws IOException;
+    
+    /**
+     * Receives an CAN frame from socket in native format <code>CanFrameNative</code>.
+     * @return The CAN frame in native format <code>CanFrameNative</code>
+     * @throws CanTimeoutException An timeout is occured {@link #setTimeout(int) }
+     * @throws IOException If the receiving from socket has failed
+     * @since 1.2
+     * @see #setTimeout(int) 
+     */
+    private native CanFrameNative receiveNative() 
+            throws CanTimeoutException, IOException;
+    
+    /**
+     * Closes the socket and sets the CAN interface down if factory method 
+     * {@link #createSocketCan(java.lang.String, int) } was used for object 
+     * creation.
+     * @param canInterface The name of the interface (e.g. vcan0, can0, ...)
+     * @throws IOException If the socket close or the interface shutdown has failed
+     * @since 1.2
+     */
+    private native void closeNative(final String canInterface
+            , final boolean interfaceControl) throws IOException;
+    
+    /**
+     * Class for transfering CAN frame content via JNI.
+     * @since 1.2
+     */
+    private static class CanFrameNative
+    {
+        private final int id;
+        private final byte length;
+        private final byte[] data;
+
+        public CanFrameNative(final int id, final byte length, final byte[] data)
         {
-            throw new IOException("Stoping for CAN interface: " + canInterface 
-                    + " has failed");
+            this.id = id;
+            this.length = length;
+            this.data = data;
         }
     }
-
-    /** {@inheritDoc } */
-    @Override
-    public void setTimeout(final int timeout) throws IOException
+    
+    /**
+     * Class for transfering CAN filter content via JNI.
+     * @since 1.2
+     */
+    private static class CanFilterNative
     {
-        final TimeValue timeValue = new TimeValue(timeout);
-        if(setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, timeValue, timeValue.size()) != 0)
-        {
-            throw new IOException("Setting the timeout on: " + canInterface 
-                    + " has failed");
-        }
-    }
+        private final int id;
+        private final int mask;
 
-    /** {@inheritDoc } */
-    @Override
-    public int getTimeout() throws IOException
-    {
-        final TimeValue timeValue = new TimeValue();
-        final IntByReference timevalSize = new IntByReference(timeValue.size());
-        if(getsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, timeValue, timevalSize) != 0)
+        public CanFilterNative(final int id, final int mask)
         {
-            throw new IOException("Reading CAN timeout value has failed");
+            this.id = id;
+            this.mask = mask;
         }
-        
-        return (int)timeValue.getMillis();
+
+        public int getId()
+        {
+            return id;
+        }
+
+        public int getMask()
+        {
+            return mask;
+        }
     }
 }
