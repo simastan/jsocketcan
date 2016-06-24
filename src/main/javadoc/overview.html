@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
 <html>
     <body>
-        <b>jSocketCan</b> is an framework for access to Linux SocketCAN over JNA.
+        <b>jSocketCan</b> is an framework for access to Linux SocketCAN from Java.
         Implements jCanInterface.
         <h1>Content</h1>
         <ul>
@@ -12,7 +12,7 @@
         </ul>
         
         <h1 id="description">Description</h1>
-        <b>jSocketCan</b> is an framework for access to Linux SocketCAN over JNA.
+        <b>jSocketCan</b> is an framework for access to Linux SocketCAN from Java.
         Implements jCanInterface.
         <p>
         </p>
@@ -24,7 +24,7 @@
         </p>
         
         <h1 id="license">License</h1>
-        <p>Copyright (C) 2015 <a href="http://www.sitec-systems.de" target="_blank">sitec systems GmbH</a></p>
+        <p>Copyright (C) 2016 <a href="http://www.sitec-systems.de" target="_blank">sitec systems GmbH</a></p>
         <p><b>License:</b></p>
         <p>
             jSocketCan is free software: you can redistribute it and/or modify it 
@@ -33,7 +33,7 @@
             any later version.
         </p>
         <p>
-            jModuleConnect is distributed in the hope that it will be useful, but WITHOUT 
+            jSocketCan is distributed in the hope that it will be useful, but WITHOUT 
             ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
             FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more 
             details.
@@ -43,21 +43,27 @@
             along with jModuleConnect. If not, see 
             <a href="http://www.gnu.org/licenses/lgpl.html" target="_blank">http://www.gnu.org/licenses/</a>.
         </p>
+        <p>
+            Library libsocketcan from Luotao Fu (<a href="mailto:l.fu@pengutronix.de">l.fu@pengutronix.de</a> 
+            from Pengutronix) is an Part of jSocketCAN. It is published under 
+            GNU Lesser General Public License verion 2.1 and taken from Debian 
+            project (<a href="https://packages.debian.org/source/sid/libsocketcan">libsocketcan_0.0.10+git20140721.orig.tar.bz2</a>).
+        </p>
         
         <h1 id="dependencys">Dependencys</h1>
         <table border="1">
             <tr><th colspan="2">Dependencys</th></tr>
             <tr>
-                <th><a href="https://github.com/java-native-access/jna" target="_blank">java-native-access</a></th>
-                <td>Used for the access the native code.</td>
-            </tr>
-            <tr>
                 <th><a href="http://www.slf4j.org/" target="_blank">SLF4J</a></th>
-                <td>Used for the Logging.</td>
+                <td>Used for the Logging</td>
             </tr>
             <tr>
-                <th><a href="" target="_blank">jCanInterface</a></th>
-                <td>Provide an general CAN interface.</td>
+                <th><b>jCanInterface</b></th>
+                <td>Provide an general CAN interface</td>
+            </tr>
+            <tr>
+                <th><b>NativeLibraryLoader</b></th>
+                <td>JNI library loader with platform resolver</td>
             </tr>
         </table>
         
@@ -66,6 +72,19 @@
             <tr>
             <th>Version</th>
             <th>Changes</th>
+            </tr>
+            <tr>
+            <td>1.2.0</td>
+            <td>
+                <ul>
+                    <li>
+                        <b>Features</b>
+                        <ul>
+                            <li>Implementation changed to Java Native Interface for performance reasons. For access to Socket CAN the library libsocketcan from Debian project (<a href="https://packages.debian.org/source/sid/libsocketcan">libsocketcan_0.0.10+git20140721.orig.tar.bz2</a>) was included</li>
+                        </ul>
+                    </li>
+                </ul>
+            </td>
             </tr>
             <tr>
             <td>1.1.1</td>

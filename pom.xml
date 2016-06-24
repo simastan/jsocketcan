@@ -197,5 +197,5 @@
             <url>http://${server.ip}:8080/nexus/content/repositories/releases</url>
         </repository>
     </distributionManagement>
-    <description>Framework for Access to Linux SocketCAN over JNA. Implements jCanInterface.</description>
+    <description>Framework for Access to Linux SocketCAN from Java. Implements jCanInterface.</description>
 </project>

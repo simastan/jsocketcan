@@ -204,6 +204,8 @@ JNIEXPORT jobject JNICALL Java_de_sitec_jsocketcan_SocketCan_receiveNative(JNIEn
             throw_new_err_code(env,"java/io/IOException","Read CAN frame has failed", errno);
         }
     }
+    
+    return NULL;
 }
 
 JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setTimeout(JNIEnv *env, jobject jobj, const jint timeout)
@@ -300,7 +302,10 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_initCanInterface(JNIEn
     }
     if(can_set_bitrate(temp_string, bitrate) != SUCCESS)
     {
+/*
         throw_new(env,"java/io/IOException", "Set baudrate has failed for CAN interface");
+*/
+        throw_new_err_code(env,"java/io/IOException", "Baudrate", errno);
         goto clear;
     }
     if(can_do_start(temp_string) != SUCCESS)
