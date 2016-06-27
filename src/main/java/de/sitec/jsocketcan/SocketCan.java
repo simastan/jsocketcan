@@ -49,7 +49,6 @@ public class SocketCan implements Can
     private final String canInterface;
     private final boolean interfaceControl;
     
-    private static final CanFilterNative DISABLE_FILTER = new CanFilterNative(0, 0);
     private static final int CAN_EFF_FLAG = 0x80000000;
     private static final int CAN_RTR_FLAG = 0x40000000;
     
@@ -188,9 +187,7 @@ public class SocketCan implements Can
     public void removeFilters() throws IOException
     {
         currentFilters.clear();
-        currentFilters.add(DISABLE_FILTER);
-        
-        setFilters(currentFilters.toArray(new CanFilterNative[currentFilters.size()]));
+        removeFiltersNative();
     }
     
     /**
@@ -204,6 +201,7 @@ public class SocketCan implements Can
     @Override
     public void close() throws IOException
     {
+        removeFilters();
         closeNative(canInterface, interfaceControl);
     }
 
@@ -323,6 +321,13 @@ public class SocketCan implements Can
      */
     private native CanFrameNative receiveNative() 
             throws CanTimeoutException, IOException;
+    
+    /**
+     * Removes filters from CAN socket.
+     * @throws IOException Set the socket option has failed
+     * @since 1.2
+     */
+    private native void removeFiltersNative() throws IOException;
     
     /**
      * Closes the socket and sets the CAN interface down if factory method 

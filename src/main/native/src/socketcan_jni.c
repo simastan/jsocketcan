@@ -157,19 +157,18 @@ JNIEXPORT jobject JNICALL Java_de_sitec_jsocketcan_SocketCan_receiveNative(JNIEn
     const int readed = read(sock, &frame, sizeof(struct can_frame));
     if(readed > 0)
     {
-        const uint arraySize = sizeof(frame.data);
-        jbyteArray temp_array = (*env)->NewByteArray(env, arraySize);
+        jbyteArray temp_array = (*env)->NewByteArray(env, frame.can_dlc);
         if(temp_array != NULL)
         {
             jbyte *temp = (*env)->GetByteArrayElements(env, temp_array, 0);
             if(temp != NULL)
             {
                 int i;
-                for(i=0; i<arraySize; i++)
+                for(i=0; i<frame.can_dlc; i++)
                 {
                     temp[i] = frame.data[i];
                 }
-                (*env)->SetByteArrayRegion(env, temp_array, 0, arraySize, temp);
+                (*env)->SetByteArrayRegion(env, temp_array, 0, frame.can_dlc, temp);
 
                 const jclass clsObj = (*env)->FindClass(env, "de/sitec/jsocketcan/SocketCan$CanFrameNative");
                 if(clsObj != NULL)
@@ -225,7 +224,7 @@ JNIEXPORT jint JNICALL Java_de_sitec_jsocketcan_SocketCan_getTimeout(JNIEnv *env
     struct timeval tv;
     socklen_t len = sizeof(struct timeval);
     
-    if (getsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, &len) == 0) 
+    if (getsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, &len) == SUCCESS) 
     {
         return (tv.tv_sec * MICROSECOND_FACTOR) + (tv.tv_usec / MICROSECOND_FACTOR);
     }
@@ -260,35 +259,47 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setFilters(JNIEnv *env
                         const jint mask = (*env)->CallIntMethod(env, filter, meth_mask);
                         native_filters[i].can_id = id;
                         native_filters[i].can_mask = mask;
-                        printf("JID: 0x%x JMASK: 0x%x\n", id, mask);
-                        printf("ID: 0x%x MASK: 0x%x\n", native_filters[i].can_id, native_filters[i].can_mask);
-                        if (setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, &native_filters, filter_arr_size) != 0)
-                        {
-                            throw_new_err_code(env,"java/io/IOException", "Cant add filters", errno);
-                        }
                     }
                     else
                     {
                         throw_new(env,"java/io/IOException", "Method getMask not found");
+                        goto clear;
                     }
                 }
                 else
                 {
                     throw_new(env,"java/io/IOException", "Method getId not found");
+                    goto clear;
                 }
             }
             else
             {
                 throw_new(env,"java/io/IOException", "Class not found");
+                goto clear;
             }
         }
         else
         {
             throw_new(env,"java/io/IOException", "Get element from filter array has failed");
+            goto clear;
         }
     }
     
-    free(native_filters);
+    if (setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, native_filters, filter_arr_size) != SUCCESS)
+    {
+        throw_new_err_code(env,"java/io/IOException", "Cant add filters", errno);
+    }
+    
+    clear:
+        free(native_filters);
+}
+
+JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_removeFiltersNative(JNIEnv *env, jobject jobj)
+{
+    if(setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0) != SUCCESS)
+    {
+        throw_new_err_code(env,"java/io/IOException", "Remove filters from CAN socket has failed", errno);
+    }
 }
 
 JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_initCanInterface(JNIEnv *env, jobject jobj, const jstring canInterface, const jint bitrate)
@@ -297,20 +308,17 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_initCanInterface(JNIEn
     
     if(can_do_stop(temp_string) != SUCCESS)
     {
-        throw_new(env,"java/io/IOException", "Stop of CAN interface has failed");
+        throw_new_err_code(env,"java/io/IOException", "Stop of CAN interface has failed", errno);
         goto clear;
     }
     if(can_set_bitrate(temp_string, bitrate) != SUCCESS)
     {
-/*
-        throw_new(env,"java/io/IOException", "Set baudrate has failed for CAN interface");
-*/
         throw_new_err_code(env,"java/io/IOException", "Baudrate", errno);
         goto clear;
     }
     if(can_do_start(temp_string) != SUCCESS)
     {
-        throw_new(env,"java/io/IOException", "Start of CAN interface has failed");
+        throw_new_err_code(env,"java/io/IOException", "Start of CAN interface has failed", errno);
         goto clear;
     }
     
