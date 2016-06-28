@@ -1,6 +1,6 @@
 # About
 
-**jSocketCan** is an framework for access to Linux SocketCAN over JNA. Implements jCanInterface.
+**jSocketCan** is an framework for access to Linux SocketCAN from Java. Implements jCanInterface.
 
 * Control the CAN bus interface
 * Read and write CAN messages
@@ -11,7 +11,12 @@
 
 [LGPLv3](http://www.gnu.org/licenses/lgpl.html)
 
-Copyright (C) 2015 sitec systems GmbH
+Copyright (C) 2016 sitec systems GmbH
+
+Library libsocketcan from Luotao Fu ([l.fu@pengutronix.de](l.fu@pengutronix.de))
+from Pengutronix is an Part of jSocketCAN. It is published under GNU Lesser 
+General Public License verion 2.1 and taken from Debian project
+ [libsocketcan_0.0.10+git20140721.orig.tar.bz2](https://packages.debian.org/source/sid/libsocketcan).
 
 # Example
 
