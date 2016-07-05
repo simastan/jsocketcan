@@ -30,7 +30,7 @@ import de.sitec.jcaninterface.CanFilter;
 import de.sitec.jcaninterface.CanFrame;
 import de.sitec.jcaninterface.CanFrame.Type;
 import de.sitec.jcaninterface.CanTimeoutException;
-import de.sitec.nativelibraryloader.NativeLibraryLoader;
+import de.sitec_systems.nativelibraryloader.NativeLibraryLoader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
