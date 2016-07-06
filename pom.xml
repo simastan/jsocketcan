@@ -169,9 +169,9 @@
     
     <dependencies>
         <dependency>
-            <groupId>de.sitec</groupId>
+            <groupId>de.sitec-systems</groupId>
             <artifactId>jCanInterface</artifactId>
-            <version>1.0.0</version>
+            <version>1.0.2</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>

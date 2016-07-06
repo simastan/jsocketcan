@@ -25,11 +25,11 @@
  */
 package de.sitec_systems.jsocketcan;
 
-import de.sitec.jcaninterface.Can;
-import de.sitec.jcaninterface.CanFilter;
-import de.sitec.jcaninterface.CanFrame;
-import de.sitec.jcaninterface.CanFrame.Type;
-import de.sitec.jcaninterface.CanTimeoutException;
+import de.sitec_systems.jcaninterface.Can;
+import de.sitec_systems.jcaninterface.CanFilter;
+import de.sitec_systems.jcaninterface.CanFrame;
+import de.sitec_systems.jcaninterface.CanFrame.Type;
+import de.sitec_systems.jcaninterface.CanTimeoutException;
 import de.sitec_systems.nativelibraryloader.NativeLibraryLoader;
 import java.io.IOException;
 import java.util.ArrayList;

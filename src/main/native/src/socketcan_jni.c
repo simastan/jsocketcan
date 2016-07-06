@@ -196,7 +196,7 @@ JNIEXPORT jobject JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_receiveNat
     {
         if(errno == EAGAIN)
         {
-            throw_new(env,"de/sitec/jcaninterface/CanTimeoutException", "Timeout occured");
+            throw_new(env,"de/sitec_systems/jcaninterface/CanTimeoutException", "Timeout occured");
         }
         else
         {
