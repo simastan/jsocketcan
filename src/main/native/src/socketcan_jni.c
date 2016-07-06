@@ -23,7 +23,7 @@
  * Author: Mattes Standfuss
  * Copyright (c): sitec systems GmbH, 2016
  */
-#include <de_sitec_jsocketcan_SocketCan.h>
+#include <de_sitec_systems_jsocketcan_SocketCan.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -76,7 +76,7 @@ void throw_new_err_code(JNIEnv *env, const char *exn, const char *message, const
     free(error_message);
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_init(JNIEnv *env, jobject jobj, const jstring canInterface)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_init(JNIEnv *env, jobject jobj, const jstring canInterface)
 {
     const int s = socket(PF_CAN, SOCK_RAW, CAN_RAW);
     if (s > 0) 
@@ -103,7 +103,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_init(JNIEnv *env, jobj
     }
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_closeNative(JNIEnv *env, jobject jobj, const jstring canInterface, const jboolean interfaceControl)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_closeNative(JNIEnv *env, jobject jobj, const jstring canInterface, const jboolean interfaceControl)
 {
     if(sock != 0)
     {
@@ -127,7 +127,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_closeNative(JNIEnv *en
     }
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_sendNative(JNIEnv *env, jobject jobj, const jint id, const jbyte length, const jbyteArray data)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_sendNative(JNIEnv *env, jobject jobj, const jint id, const jbyte length, const jbyteArray data)
 {
     struct can_frame frame;
     
@@ -151,7 +151,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_sendNative(JNIEnv *env
     (*env)->ReleaseByteArrayElements(env, data, bytes, 0);
 }
 
-JNIEXPORT jobject JNICALL Java_de_sitec_jsocketcan_SocketCan_receiveNative(JNIEnv *env, jobject jobj)
+JNIEXPORT jobject JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_receiveNative(JNIEnv *env, jobject jobj)
 {
     struct can_frame frame;
     const int readed = read(sock, &frame, sizeof(struct can_frame));
@@ -170,7 +170,7 @@ JNIEXPORT jobject JNICALL Java_de_sitec_jsocketcan_SocketCan_receiveNative(JNIEn
                 }
                 (*env)->SetByteArrayRegion(env, temp_array, 0, frame.can_dlc, temp);
 
-                const jclass clsObj = (*env)->FindClass(env, "de/sitec/jsocketcan/SocketCan$CanFrameNative");
+                const jclass clsObj = (*env)->FindClass(env, "de/sitec_systems/jsocketcan/SocketCan$CanFrameNative");
                 if(clsObj != NULL)
                 {
                     const jmethodID methodID = (*env)->GetMethodID(env, clsObj, "<init>", "(IB[B)V");
@@ -207,7 +207,7 @@ JNIEXPORT jobject JNICALL Java_de_sitec_jsocketcan_SocketCan_receiveNative(JNIEn
     return NULL;
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setTimeout(JNIEnv *env, jobject jobj, const jint timeout)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_setTimeout(JNIEnv *env, jobject jobj, const jint timeout)
 {
     struct timeval tv;
     tv.tv_sec = timeout / MICROSECOND_FACTOR;
@@ -219,7 +219,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setTimeout(JNIEnv *env
     }
 }
 
-JNIEXPORT jint JNICALL Java_de_sitec_jsocketcan_SocketCan_getTimeout(JNIEnv *env, jobject jobj)
+JNIEXPORT jint JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_getTimeout(JNIEnv *env, jobject jobj)
 {
     struct timeval tv;
     socklen_t len = sizeof(struct timeval);
@@ -234,7 +234,7 @@ JNIEXPORT jint JNICALL Java_de_sitec_jsocketcan_SocketCan_getTimeout(JNIEnv *env
     }
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setFilters(JNIEnv *env, jobject jobj, const jobjectArray filters)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_setFilters(JNIEnv *env, jobject jobj, const jobjectArray filters)
 {
     const uint filters_size = (*env)->GetArrayLength(env, filters);
     struct can_filter *native_filters;
@@ -294,7 +294,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_setFilters(JNIEnv *env
         free(native_filters);
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_removeFiltersNative(JNIEnv *env, jobject jobj)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_removeFiltersNative(JNIEnv *env, jobject jobj)
 {
     if(setsockopt(sock, SOL_CAN_RAW, CAN_RAW_FILTER, NULL, 0) != SUCCESS)
     {
@@ -302,7 +302,7 @@ JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_removeFiltersNative(JN
     }
 }
 
-JNIEXPORT void JNICALL Java_de_sitec_jsocketcan_SocketCan_initCanInterface(JNIEnv *env, jobject jobj, const jstring canInterface, const jint bitrate)
+JNIEXPORT void JNICALL Java_de_sitec_1systems_jsocketcan_SocketCan_initCanInterface(JNIEnv *env, jobject jobj, const jstring canInterface, const jint bitrate)
 {
     const char *temp_string = (*env)->GetStringUTFChars(env, canInterface, (jboolean)0);
     

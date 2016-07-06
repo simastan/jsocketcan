@@ -23,7 +23,7 @@
  * Author: Mattes Standfuss
  * Copyright (c): sitec systems GmbH, 2016
  */
-package de.sitec.jsocketcan;
+package de.sitec_systems.jsocketcan;
 
 import de.sitec.jcaninterface.Can;
 import de.sitec.jcaninterface.CanFilter;
@@ -54,7 +54,7 @@ public class SocketCan implements Can
     
     static
     {
-        NativeLibraryLoader.loadLibrary("de.sitec.jsocketcan", "libsocketcan_jni");
+        NativeLibraryLoader.loadLibrary("de.sitec_systems.jsocketcan", "libsocketcan_jni");
     }
     
     /**

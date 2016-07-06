@@ -18,6 +18,11 @@ from Pengutronix is an Part of jSocketCAN. It is published under GNU Lesser
 General Public License verion 2.1 and taken from Debian project
  [libsocketcan_0.0.10+git20140721.orig.tar.bz2](https://packages.debian.org/source/sid/libsocketcan).
 
+# Compatibility
+
+* Linux - amd64
+* Linux - armhf
+
 # Example
 
 Reads module information and prints the file listing of the connected module
